@@ -2,13 +2,7 @@ import requests
 import csv
 import io
 
-url = (
-    "https://docs.google.com/spreadsheets/d/"
-    "1W9qMX1QzlZvBkNS0lwA7ZKyMGUlR9dBZnAE9JwqHRHg/export"
-    "?format=csv&gid=1367877017"
-)
-
-def init_table():
+def init_table(url):
     response = requests.get(url)
     response.raise_for_status()
 
@@ -31,7 +25,7 @@ def get_days_of_week_indexes(table):
     for i in range(len(table)):
         word = table[i][0]
         for j in range(len(days_of_week)):
-            if days_of_week[j] in word:
+            if days_of_week[j].lower() in word.lower():
                 days_of_week_indexes[j] = i
 
     return days_of_week_indexes
@@ -43,13 +37,13 @@ def get_classes_indexes(table):
     for i in range(len(table[0])):
         word = table[0][i]
         for j in range(len(classes)):
-            if classes[j] in word:
+            if classes[j].lower() in word.lower():
                 classes_indexes[j] = i
 
     return classes_indexes
 
-def init_structured_table():
-    table = init_table()
+def init_structured_table(url):
+    table = init_table(url=url)
     days_of_week_indexes = get_days_of_week_indexes(table)
     classes_indexes = get_classes_indexes(table)
     strucutred_table = []
@@ -62,3 +56,6 @@ def init_structured_table():
                 strucutred_table[i][j].append(row[classes_indexes[j]:classes_indexes[j+1]])
 
     return strucutred_table
+
+if __name__ == "__main__":
+    print(init_table())
