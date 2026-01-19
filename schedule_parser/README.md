@@ -52,11 +52,8 @@
 > [!NOTE]
 > ```python
 > import schedule_parser as sp
-> url = (
->     "https://docs.google.com/spreadsheets/d/" # гугл таблицы
->     "1W9qMX1QzlZvBkNS0lwA7ZKyMGUlR9dBZnAE9JwqHRHg/export" # id таблицы
->     "?format=csv&gid=917584427" # id страницы
-> )
+> from cofig.py import *
+>
 > days_of_week = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота"]
 > classes = ["5С", "6С", "7С", "8С", "9С", "10С", "10Т", "11С"]
 > 
