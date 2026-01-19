@@ -13,3 +13,5 @@
 
 #для пайэча
 **/__pycache__/
+**/archive
+*.json
