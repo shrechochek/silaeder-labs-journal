@@ -125,7 +125,8 @@ def init_dictionary(days_of_week, classes, lessons):
                     group["name"] = lesson_name
                     group["cab"] = lesson_cab
 
-                    lesson["group" + str(x4+1)] = group
+                    if(lesson_name != ""):
+                        lesson["group" + str(x4+1)] = group
 
                 lesson_dict["lesson"] = lesson
 
