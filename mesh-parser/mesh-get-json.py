@@ -9,9 +9,6 @@ with sync_playwright() as p:
     context = browser.new_context(storage_state="auth.json")
     page = context.new_page()
 
-    print(len(lessons_id))
-    print(len(lessons_name))
-
     page.route(
         "**/*",
         lambda route, request:
@@ -26,14 +23,16 @@ with sync_playwright() as p:
             and response.status == 200
         )
 
-    with page.expect_response(is_needed) as resp_info:
-        page.goto("https://school.mos.ru/diary/marks/current-marks/?view=by_subject&subject_id=33623620")
+    for i in range(len(lessons_id)):
+        print(lessons_name[i])
+        with page.expect_response(is_needed) as resp_info:
+            page.goto("https://school.mos.ru/diary/marks/current-marks/?view=by_subject&subject_id=" +str(lessons_id[i]))
 
-    response = resp_info.value
-    data = response.json()
+        response = resp_info.value
+        data = response.json()
 
-    # print(data)
-    with open('experements/marks_data/data.json', 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        with open('mesh-parser/data/data-'+str(lessons_name[i])+'.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        print()
 
     browser.close()
