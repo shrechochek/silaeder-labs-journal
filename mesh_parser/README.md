@@ -8,8 +8,8 @@
 1. клонирование и запуск логина
 ```bash 
 git clone https://github.com/silaeder-labs/journal #клонирование репозитория
-cd journal/mesh-parser #переход в папку
+cd journal #переход в папку
 npm install dotenv # установка библиотек
-node mesh-parser.js
+node mesh_parser/mesh-parser.js
 ```
-после завершения программы `.json` файлы будут в папку `/data`
+после завершения программы `.json` файлы будут в папке `/mesh_parser/data`

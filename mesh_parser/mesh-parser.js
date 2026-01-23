@@ -8,7 +8,7 @@ const URL_BASE = "https://school.mos.ru/api/ej/rating/v1/rank/class?personId=5e6
 const subject_ids = [33623636, 33623620, 37175860, 33623623, 33623645, 33623617, 33623590, 33623577, 33623648, 33623651, 33623650, 33623605, 33623584, 33623580];
 const subject_names = ['biology', 'geography', 'english', 'informatics', 'history', 'literature', 'russian', 'chemistry', 'algebra', 'statistics', 'geometry', 'social-science', 'physics', 'pe'];
 
-const jsonFilePath = path.join(__dirname, 'data.json');
+const jsonFilePath = path.join(__dirname, 'data/data.json');
 // const subject_ids = [33623636];
 // const subject_names = ['biology'];
 
