@@ -30,9 +30,7 @@ async function getRank(url) {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${authorization_token}`,
-                "profile-type": "student",
-                "x-mes-subsystem": "familyweb",
-                "accept": "application/json"
+                "x-mes-subsystem": "familyweb"
             }
         });
         if (!response.ok) throw new Error(`Ошибка: ${response.status}`);
