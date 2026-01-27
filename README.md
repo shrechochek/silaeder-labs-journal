@@ -2,4 +2,4 @@
 
 ## Contents 
 - [Парсер таблицы расписания](/schedule_parser)
-- [Парсер МЭШа](/mesh-parser)
+- [Парсер МЭШа](/mesh_parser)
