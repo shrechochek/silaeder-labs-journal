@@ -1,41 +1,38 @@
-const getSubjectMarks = async () => {
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+const authorization_token = process.env.BEARER_TOKEN;
+
+const getSubjectIdsAndMarks = async () => {
   const url = "https://school.mos.ru/api/family/web/v1/subject_marks?student_id=31835076";
 
-  let subjects_names = []
-  let subject_ids = []
+  let subjects_names = [];
+  let subject_ids = [];
 
   const options = {
     method: "GET",
     headers: {
-      
-      "profile-id": "31835076",
+      "authorization": `Bearer ${authorization_token}`,
       "x-mes-subsystem": "familyweb"
     }
   };
 
   try {
     const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      throw new Error(`Ошибка: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Ошибка: ${response.status}`);
 
     const data = await response.json();
-    for (let i = 0; i < data["payload"].length; i++) {
-        subject_ids.push(data["payload"][i]["subject_id"]);
-        subjects_names.push(data["payload"][i]["subject_name"]);
+    
+    for (let item of data["payload"]) {
+        subject_ids.push(item["subject_id"]);
+        subjects_names.push(item["subject_name"]);
     }
-    // console.log(data["payload"]);
-    // console.log(data["payload"].length);
-    console.log(subject_ids);
-    console.log(subjects_names);
+
+    return { subject_ids, subjects_names }; 
 
   } catch (error) {
-    console.error("Произошла ошибка при запросе:", error.message);
+    console.error("Произошла ошибка:", error.message);
   }
 };
 
-getSubjectMarks();
-
-
-
+module.exports = { getSubjectIdsAndMarks };
