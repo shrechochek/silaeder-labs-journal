@@ -244,31 +244,21 @@ def print_schedule_summary(schedule_dict, day="Понедельник", class_na
         print("Данные не найдены")
 
 if __name__ == "__main__":
-    print("Загружаем таблицу...")
+    print("собираем информаци...")
     table = init_table(URL)
     
-    print("Извлекаем дни недели...")
     days_of_week = get_days_of_week(table, DAYS_OF_WEEK_START_MARKER, DAYS_OF_WEEK_STOP_MARKER)
-    print(f"Найдено дней: {days_of_week[0]}")
     
-    print("Извлекаем классы...")
     classes = get_classes(table, CLASSES_START_MARKER, CLASSES_STOP_MARKER)
-    print(f"Найдено классов: {classes[0]}")
     
-    print("Извлекаем уроки...")
     lessons = get_lessons_of_day(table, days_of_week[1], classes[1])
     
-    # Отладочная информация
-    print("\nОтладочная информация:")
-    debug_lessons_structure(lessons, 0, 0)  # первый день, первый класс
+    debug_lessons_structure(lessons, 0, 0)
     
-    print("\nСоздаем словарь...")
     schedule_dict = init_dictionary(days_of_week, classes, lessons)
     
-    # Показываем пример расписания
     print_schedule_summary(schedule_dict, "Понедельник", "5С")
     
-    print("\nСохраняем в JSON...")
     convert_to_json(schedule_dict)
     
     print("Готово!")
