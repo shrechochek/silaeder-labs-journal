@@ -67,4 +67,7 @@ async function getHomework(from_date, to_date) {
     }
 }
 
-getHomework('2026-01-28', '2026-01-28');
+
+module.exports = { getHomework };
+
+// getHomework('2026-01-28', '2026-01-28'); //example
