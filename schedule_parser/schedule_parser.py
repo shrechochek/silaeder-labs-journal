@@ -4,225 +4,151 @@ import io
 import json
 import re
 from pathlib import Path
-from config import *
-from typing import TypedDict, NamedTuple, List, Dict
+from dataclasses import dataclass, asdict, field
+from typing import List, Dict, Optional, Tuple
 
-class DayLessons(NamedTuple):
-    data: List[List[List[List[str]]]]
-    start_times: List[List[str]]
-    end_times: List[List[str]]
-    indices: List[List[int]]
+@dataclass
+class LessonGroup:
+    name: str
+    cabinet: str
+    groups: List[int]
 
+@dataclass
+class TimeSlot:
+    start: str
+    end: str
+    lessons: List[LessonGroup] = field(default_factory=list)
 
-cabinet_patterns = [
-    r'\s+(\d{1,3}[а-яА-Я]?)$',
-    r'\s+([А-Яа-я]{1,3}\d{1,3})$',
-    r'\s+(спорт\.?\s*зал|актовый\s*зал|библиотека)$',
-]
+class ScheduleParser:
+    CABINET_PATTERNS = [
+        r'\s+(\d{1,3}[а-яА-Я]?)$',
+        r'\s+([А-Яа-я]{1,3}\d{1,3})$',
+        r'\s+(спорт\.?\s*зал|актовый\s*зал|библиотека)$',
+    ]
 
-def extract_lesson_and_cabinet(lesson_text: str) -> tuple[str, str]:
-    lesson_text = lesson_text.strip()
-    if not lesson_text:
-        return "", ""
-    
-    lesson_name = lesson_text
-    cabinet = ""
-    
-    for pattern in cabinet_patterns:
-        match = re.search(pattern, lesson_text, re.IGNORECASE)
-        if match:
-            cabinet = match.group(1).strip()
-            lesson_name = lesson_text[:match.start()].strip()
-            break
-    
-    return lesson_name, cabinet
+    def __init__(self, url: str, config: dict):
+        self.url = url
+        self.cfg = config
+        self.table: List[List[str]] = []
 
-def init_table(url: str) -> list[list[str]]:
-    response = requests.get(url)
-    response.raise_for_status()
+    def fetch_data(self):
+        response = requests.get(self.url)
+        response.raise_for_status()
+        text = response.content.decode("utf-8")
+        self.table = list(csv.reader(io.StringIO(text)))
+        return self
 
-    text = response.content.decode("utf-8")
-    reader = csv.reader(io.StringIO(text))
-    table = []
-
-    for row in reader:
-        table.append(row)
-
-    return table
-
-def get_days_of_week(table: list[list[str]], days_of_week_start_marker: str, days_of_week_stop_marker: str) -> tuple[list[str], list[int]]:
-    days_of_week = []
-    days_of_week_indexes = []
-
-    isReading = False
-
-    for i in range(len(table)):
-        word = table[i][0]
-        if not isReading:
-            if(word.lower() == days_of_week_start_marker.lower()):
-                days_of_week.append(word)
-                days_of_week_indexes.append(i)
-                isReading = True
-        else:
-            if(word != ''):
-                days_of_week.append(word)
-                days_of_week_indexes.append(i)
-                if(word.lower() == days_of_week_stop_marker.lower()):
-                    break
-
-    return days_of_week, days_of_week_indexes
-
-def get_classes(table: list[list[str]], classes_start_marker: str, classes_stop_marker: str) -> tuple[list[str], list[int]]:
-    classes = []
-    classes_indexes = []
-
-    isReading = False
-
-    for i in range(len(table[0])):
-        word = table[0][i]
-        if not isReading:
-            if(word.lower() == classes_start_marker.lower()):
-                classes.append(word)
-                classes_indexes.append(i)
-                isReading = True
-        else:
-            if(word != ''):
-                classes_indexes.append(i)
-                if(word.lower() == classes_stop_marker.lower()):
-                    break
-                classes.append(word)
-
-    return classes, classes_indexes
-
-def get_lessons_of_day(table: list[list[str]], day_of_week_indexes: list[int], classes_indexes: list[int]) -> DayLessons:
-    lessons = []
-    lessons_start_time = []
-    lessons_end_time = []
-    lessons_indexes = []
-
-    for i in range(len(day_of_week_indexes)):
-        lessons_start_time.append([])
-        lessons_end_time.append([])
-        lessons_indexes.append([])
-        lessons.append([])
-
-        for j in range(day_of_week_indexes[i], len(table)):
-            index = table[j][1]
-            start_time = table[j][2]
-            end_time = table[j][3]
-
-            if(index == ""):
-                break
-
-            lessons_indexes[i].append(int(index))
-            lessons_start_time[i].append(start_time)
-            lessons_end_time[i].append(end_time)
-
-        for j in range(len(classes_indexes)-1):
-            lessons[i].append([])
-            for v in range(len(lessons_indexes[i])):
-                groups = []
-                lesson_row = day_of_week_indexes[i] + v + 1
-                for u in range(classes_indexes[j], classes_indexes[j+1]):
-                    groups.append(table[lesson_row][u])
-
-                lessons[i][j].append(groups)
-
-    return lessons, lessons_start_time, lessons_end_time, lessons_indexes
-
-def convert_to_json(table: list[list[str]]) -> None:
-    script_path = Path(__file__).resolve()
-    script_dir = script_path.parent
-
-    final_path = script_dir / "data/data.json"
-    
-    # Создаем папку data если её нет
-    final_path.parent.mkdir(exist_ok=True)
-    
-    with open(final_path, 'w', encoding='utf-8') as f:
-        json.dump(table, f, ensure_ascii=False, indent=2)
-    
-    print(f"Данные сохранены в: {final_path}")
-
-def init_dictionary(days_of_week: list[str], classes: list[str], lessons: list[str]) -> dict[str, str]:
-    dict = {}
-    
-    for x1 in range(len(days_of_week[0])):  # дни недели
-        day_dict = {}
+    def _extract_lesson_info(self, text: str) -> Tuple[str, str]:
+        text = text.strip()
+        if not text:
+            return "", ""
         
-        for x2 in range(len(classes[0])):  # классы
-            class_dict = {}
+        for pattern in self.CABINET_PATTERNS:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                return text[:match.start()].strip(), match.group(1).strip()
+        return text, ""
+
+    def _find_markers(self) -> Tuple[Dict[str, int], Dict[str, int]]:
+        days = {}
+        classes = {}
+        
+        is_reading_days = False
+        for i, row in enumerate(self.table):
+            val = row[0].strip().lower()
+            if val == self.cfg['DAYS_START'].lower():
+                is_reading_days = True
+            if is_reading_days and row[0]:
+                days[row[0]] = i
+                if val == self.cfg['DAYS_STOP'].lower():
+                    break
+        
+        is_reading_classes = False
+        for j, val in enumerate(self.table[0]):
+            val_clean = val.strip().lower()
+            if val_clean == self.cfg['CLASSES_START'].lower():
+                is_reading_classes = True
+            if is_reading_classes and val:
+                classes[val] = j
+                if val_clean == self.cfg['CLASSES_STOP'].lower():
+                    break
+                    
+        return days, classes
+
+    def parse(self) -> Dict:
+        day_markers, class_markers = self._find_markers()
+        day_names = list(day_markers.keys())
+        class_names = list(class_markers.keys())
+        class_indices = list(class_markers.values())
+        
+        schedule = {}
+
+        for i, day_name in enumerate(day_names):
+            day_start_row = day_markers[day_name]
+            # Определяем, где заканчивается текущий день
+            next_day_row = day_markers[day_names[i+1]] if i+1 < len(day_names) else len(self.table)
             
-            for x3 in range(len(lessons[3][x1])):  # уроки в дне
-                lesson_dict = {}
-                lesson_dict["from"] = lessons[1][x1][x3]
-                lesson_dict["to"] = lessons[2][x1][x3]
+            day_data = {}
 
-                # Собираем все уроки для данного времени
-                all_lessons_for_time = lessons[0][x1][x2][x3]
+            for j, class_name in enumerate(class_names):
+                class_start_col = class_indices[j]
+                # Определяем границы колонок для групп одного класса
+                next_class_col = class_indices[j+1] if j+1 < len(class_indices) else len(self.table[0])
                 
-                # Группируем уроки по содержимому
-                lesson_groups = {}
-                
-                for x4 in range(len(all_lessons_for_time)):
-                    lesson_text = str(all_lessons_for_time[x4]).strip()
-                    
-                    if lesson_text == "":
-                        continue
-                    
-                    # Извлекаем название урока и кабинет
-                    lesson_name, lesson_cab = extract_lesson_and_cabinet(lesson_text)
-                    
-                    if lesson_name == "":
-                        continue
-                    
-                    # Создаем ключ для группировки одинаковых уроков
-                    lesson_key = f"{lesson_name}_{lesson_cab}"
-                    
-                    if lesson_key not in lesson_groups:
-                        lesson_groups[lesson_key] = {
-                            "name": lesson_name,
-                            "cabinet": lesson_cab,
-                            "groups": []
-                        }
-                    
-                    # Добавляем номер группы (позицию в расписании + 1)
-                    lesson_groups[lesson_key]["groups"].append(x4 + 1)
-                
-                # Формируем финальную структуру уроков
-                lessons_list = []
-                for lesson_info in lesson_groups.values():
-                    lesson_data = {
-                        "name": lesson_info["name"],
-                        "cabinet": lesson_info["cabinet"],
-                        "groups": lesson_info["groups"]  # список групп, для которых предназначен урок
-                    }
-                    lessons_list.append(lesson_data)
+                lessons_in_day = {}
 
-                lesson_dict["lessons"] = lessons_list
-                
-                # Добавляем урок только если есть хотя бы один урок
-                if lessons_list:
-                    class_dict[lessons[3][x1][x3]] = lesson_dict
+                # Идем по строкам уроков внутри дня
+                for row_idx in range(day_start_row, next_day_row):
+                    row = self.table[row_idx]
+                    lesson_num = row[1]
+                    if not lesson_num: continue # Пропускаем пустые строки
 
-            day_dict[classes[0][x2]] = class_dict
+                    slot = TimeSlot(start=row[2], end=row[3])
+                    
+                    # Группировка подгрупп (физика/англ) в один объект
+                    lesson_groups_map = {}
+                    
+                    for col_idx in range(class_start_col, next_class_col):
+                        raw_text = row[col_idx]
+                        name, cab = self._extract_lesson_info(raw_text)
+                        
+                        if not name: continue
+                        
+                        key = f"{name}||{cab}"
+                        if key not in lesson_groups_map:
+                            lesson_groups_map[key] = LessonGroup(name, cab, [])
+                        
+                        # Номер подгруппы — это смещение от начала колонки класса
+                        lesson_groups_map[key].groups.append(col_idx - class_start_col + 1)
 
-        dict[days_of_week[0][x1]] = day_dict
+                    slot.lessons = list(lesson_groups_map.values())
+                    if slot.lessons:
+                        lessons_in_day[lesson_num] = asdict(slot)
 
-    return dict    
+                day_data[class_name] = lessons_in_day
+            
+            schedule[day_name] = day_data
+            
+        return schedule
+
+def save_json(data: dict, filename: str = "data/data.json"):
+    path = Path.cwd() / Path(filename)
+    path.parent.mkdir(exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print(f"Сохранено в {path}")
 
 if __name__ == "__main__":
-    print("собираем информаци...")
-    table = init_table(URL)
+    from config import URL, DAYS_OF_WEEK_START_MARKER, DAYS_OF_WEEK_STOP_MARKER, CLASSES_START_MARKER, CLASSES_STOP_MARKER
     
-    days_of_week = get_days_of_week(table, DAYS_OF_WEEK_START_MARKER, DAYS_OF_WEEK_STOP_MARKER)
+    config = {
+        'DAYS_START': DAYS_OF_WEEK_START_MARKER,
+        'DAYS_STOP': DAYS_OF_WEEK_STOP_MARKER,
+        'CLASSES_START': CLASSES_START_MARKER,
+        'CLASSES_STOP': CLASSES_STOP_MARKER
+    }
+
+    parser = ScheduleParser(URL, config)
     
-    classes = get_classes(table, CLASSES_START_MARKER, CLASSES_STOP_MARKER)
-    
-    lessons = get_lessons_of_day(table, days_of_week[1], classes[1])
-    
-    schedule_dict = init_dictionary(days_of_week, classes, lessons)
-    
-    convert_to_json(schedule_dict)
-    
-    print("Готово!")
+    data = parser.fetch_data().parse()
+    save_json(data)
