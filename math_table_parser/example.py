@@ -1,4 +1,4 @@
-import math_plusnik_homework_parser as mp
+import math_table_parser.math_table_parser as mp
 from config import *
 
 table = mp.init_table(URL)
