@@ -149,9 +149,6 @@ if __name__ == "__main__":
     }
 
     parser = ScheduleParser(URL, config)
-    try:
-        data = parser.fetch_data().parse()
-        save_json(data)
-        print("Успешно!")
-    except Exception as e:
-        print(f"Ошибка при парсинге: {e}")
+    
+    data = parser.fetch_data().parse()
+    save_json(data)
