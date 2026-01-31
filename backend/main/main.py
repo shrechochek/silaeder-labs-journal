@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -7,12 +8,14 @@ import get_test as gt
 
 app = FastAPI()
 
-# статика (css, js и т.п.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/subjects/statistic"))
 
-@app.get("/")
-def root():
-    return FileResponse("static/index.html")
+app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+@app.get("/statistic")
+def read_index():
+    file_path = os.path.join(frontend_path, "index.html")
+    return FileResponse(file_path)
 
 app.add_middleware(
     CORSMiddleware,
