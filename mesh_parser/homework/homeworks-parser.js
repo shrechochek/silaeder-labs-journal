@@ -3,7 +3,10 @@ const { getSessions } = require('../ids/id_parser.js');
 const path = require('path');
 const fs = require('fs');
 
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({
+  path: path.join(__dirname, '../.env'),
+  quiet: true
+});
 
 const authorization_token = process.env.BEARER_TOKEN;
 

@@ -4,7 +4,10 @@ const { getSessions } = require('../ids/id_parser.js');
 
 //token from .env
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({
+  path: path.join(__dirname, '../.env'),
+  quiet: true
+});
 const authorization_token = process.env.BEARER_TOKEN;
 
 const URL_BASE = "https://school.mos.ru/api/ej/rating/v1/rank/class";
