@@ -5,17 +5,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import get_test as gt
+import os
 
 app = FastAPI()
 
-frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/subjects/statistic"))
+base_path = os.path.dirname(os.path.abspath(__file__))
+frontend_path = os.path.abspath(os.path.join(base_path, "..", "..", "frontend"))
 
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 @app.get("/statistic")
-def read_index():
-    file_path = os.path.join(frontend_path, "index.html")
-    return FileResponse(file_path)
+def get_statistic_page():
+    html_file = os.path.join(frontend_path, "subjects", "statistic", "index.html")
+    return FileResponse(html_file)
 
 app.add_middleware(
     CORSMiddleware,
